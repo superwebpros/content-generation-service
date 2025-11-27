@@ -1,0 +1,25 @@
+{
+  "name": "content-generation-service",
+  "version": "1.0.0",
+  "description": "Multi-language microservice for AI-powered content generation",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "services/*"
+  ],
+  "scripts": {
+    "install:all": "npm install && cd services/api-gateway && npm install",
+    "dev:api": "cd services/api-gateway && npm run dev",
+    "start:api": "cd services/api-gateway && npm start"
+  },
+  "keywords": ["content-generation", "lora", "ai", "microservices"],
+  "author": "SuperWebPros",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "mongoose": "^8.0.0",
+    "@aws-sdk/client-s3": "^3.450.0",
+    "@aws-sdk/s3-request-presigner": "^3.450.0",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1"
+  }
+}
