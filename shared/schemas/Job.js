@@ -4,12 +4,24 @@ const { Schema } = mongoose;
 
 const jobVersionSchema = new Schema({
   version: { type: Number, required: true },
-  modelUrl: { type: String, required: true },
-  s3Key: { type: String, required: true },
+
+  // LoRA training fields
+  modelUrl: { type: String },
+  s3Key: { type: String },
   sizeBytes: { type: Number },
+
+  // Image generation fields
+  images: { type: Array },
+
+  // Transcription fields
+  transcriptUrl: { type: String },
+  textUrl: { type: String },
+  wordCount: { type: Number },
+  duration: { type: Number },
+
   createdAt: { type: Date, default: Date.now },
   config: { type: Object }
-}, { _id: false });
+}, { _id: false, strict: false }); // strict: false allows additional fields
 
 const jobSchema = new Schema({
   jobId: {
