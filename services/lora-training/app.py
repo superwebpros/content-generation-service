@@ -11,6 +11,9 @@ from datetime import datetime
 from dotenv import load_dotenv
 import asyncio
 
+from db import db
+from training_pipeline import pipeline
+
 # Load environment from root
 load_dotenv(dotenv_path='../../.env')
 
@@ -21,6 +24,18 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Connect to MongoDB on startup"""
+    await db.connect()
+    print("✅ LoRA Training Worker started")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close connections on shutdown"""
+    await db.close()
+    print("👋 LoRA Training Worker shutting down")
 
 # Pydantic models for request/response
 class TrainRequest(BaseModel):
@@ -92,17 +107,25 @@ async def process_training_job(request: TrainRequest):
     8. Upload to S3
     9. Update MongoDB with results
     """
-    # TODO: Implement full training pipeline
-    # For now, this is a placeholder
+    try:
+        print(f"🚀 Starting training pipeline for job {request.job_id}")
 
-    print(f"Processing job {request.job_id}")
-    print(f"Video: {request.video_url}")
-    print(f"LoRA name: {request.lora_name}")
+        result = await pipeline.process_training_job(
+            job_id=request.job_id,
+            user_id=request.user_id,
+            video_url=request.video_url,
+            lora_name=request.lora_name,
+            trigger=request.trigger,
+            steps=request.steps,
+            learning_rate=request.learning_rate
+        )
 
-    # Simulate work
-    await asyncio.sleep(2)
+        print(f"✅ Training complete! Model URL: {result['modelUrl']}")
 
-    print(f"Job {request.job_id} completed (placeholder)")
+    except Exception as e:
+        print(f"❌ Training failed for job {request.job_id}: {e}")
+        # Error already logged to MongoDB in pipeline
+        raise
 
 # Development server
 if __name__ == "__main__":
