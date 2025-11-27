@@ -7,6 +7,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import loraRoutes from './routes/lora.js';
+import imageRoutes from './routes/images.js';
+import jobsRoutes from './routes/jobs.js';
 import { specs, swaggerUi } from './config/swagger.js';
 
 // ES modules workaround for __dirname
@@ -46,7 +48,9 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-app.use('/api/lora', loraRoutes);
+app.use('/api/jobs', jobsRoutes); // General jobs endpoint (all types)
+app.use('/api/lora', loraRoutes); // LoRA-specific endpoints
+app.use('/api/images', imageRoutes); // Image generation endpoints
 
 // 404 handler
 app.use((req, res) => {
