@@ -57,7 +57,8 @@ router.post('/train', async (req, res) => {
       loraName,
       trigger = 'person',
       steps = 2500,
-      learning_rate = 0.00009
+      learning_rate = 0.00009,
+      webhookUrl
     } = req.body;
 
     // Validation
@@ -83,6 +84,7 @@ router.post('/train', async (req, res) => {
         steps,
         learning_rate
       },
+      webhookUrl, // Optional webhook for notification
       status: 'queued',
       progress: 0
     });

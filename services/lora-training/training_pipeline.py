@@ -17,6 +17,7 @@ from providers.fal_ai import create_fal_provider
 from providers.base import TrainingConfig
 from db import db
 from s3_storage import s3_storage
+from webhook_notifier import send_webhook, create_completion_payload, create_failure_payload
 
 
 class TrainingPipeline:
@@ -175,16 +176,48 @@ class TrainingPipeline:
 
             print(f"🎉 Job {job_id} completed successfully!")
 
-            return {
+            result = {
                 "modelUrl": lora_public_url,
                 "s3Key": lora_s3_key,
                 "sizeBytes": lora_size,
                 "version": version
             }
 
+            # Step 10: Send webhook notification if configured
+            job = await db.get_job(job_id)
+            if job and job.get('webhookUrl'):
+                print(f"📞 Sending completion webhook...")
+                webhook_result = await send_webhook(
+                    job['webhookUrl'],
+                    create_completion_payload(job, result)
+                )
+
+                # Update webhook status in MongoDB
+                await db.jobs.update_one(
+                    {"jobId": job_id},
+                    {
+                        "$set": {
+                            "webhookAttempts": webhook_result.get("attempts", 0),
+                            "webhookLastError": webhook_result.get("error") if not webhook_result["success"] else None
+                        }
+                    }
+                )
+
+            return result
+
         except Exception as e:
             print(f"❌ Training failed: {e}")
             await db.update_job_status(job_id, "failed", error=str(e))
+
+            # Send failure webhook if configured
+            job = await db.get_job(job_id)
+            if job and job.get('webhookUrl'):
+                print(f"📞 Sending failure webhook...")
+                await send_webhook(
+                    job['webhookUrl'],
+                    create_failure_payload(job, str(e))
+                )
+
             raise
 
         finally:

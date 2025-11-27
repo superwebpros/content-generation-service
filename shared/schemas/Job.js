@@ -43,6 +43,23 @@ const jobSchema = new Schema({
     default: {}
   },
 
+  // Webhook notification (optional)
+  webhookUrl: {
+    type: String,
+    validate: {
+      validator: function(v) {
+        if (!v) return true; // Optional field
+        return /^https?:\/\/.+/.test(v);
+      },
+      message: 'webhookUrl must be a valid HTTP/HTTPS URL'
+    }
+  },
+  webhookAttempts: {
+    type: Number,
+    default: 0
+  },
+  webhookLastError: String,
+
   // Outputs (versioned for LoRA training)
   versions: [jobVersionSchema],
 
