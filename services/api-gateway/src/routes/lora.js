@@ -1,12 +1,53 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import Job from '../../../../shared/schemas/Job.js';
+import { triggerTrainingWorker } from '../config/services.js';
 
 const router = express.Router();
 
 /**
- * POST /api/lora/train
- * Start a new LoRA training job
+ * @swagger
+ * /api/lora/train:
+ *   post:
+ *     summary: Start a new LoRA training job
+ *     description: Creates a new LoRA training job from a video URL. The job is queued and processed asynchronously.
+ *     tags: [LoRA Training]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TrainingRequest'
+ *     responses:
+ *       201:
+ *         description: Training job created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 jobId:
+ *                   type: string
+ *                   format: uuid
+ *                 status:
+ *                   type: string
+ *                   example: queued
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Missing required fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.post('/train', async (req, res) => {
   try {
@@ -48,9 +89,21 @@ router.post('/train', async (req, res) => {
 
     await job.save();
 
-    // TODO: Trigger training worker (via HTTP call to Python service or job queue)
-    // For now, we'll just return the job ID
-    // In Phase 2, we'll add: await triggerTrainingWorker(jobId);
+    // Trigger training worker
+    try {
+      await triggerTrainingWorker(jobId, {
+        userId,
+        videoUrl,
+        loraName,
+        trigger,
+        steps,
+        learning_rate
+      });
+    } catch (error) {
+      // Worker failed to start, but job is queued
+      // It can be retried later
+      console.error('Failed to trigger training worker:', error.message);
+    }
 
     res.status(201).json({
       jobId,
@@ -73,8 +126,41 @@ router.post('/train', async (req, res) => {
 });
 
 /**
- * GET /api/lora/status/:jobId
- * Get status of a training job
+ * @swagger
+ * /api/lora/status/{jobId}:
+ *   get:
+ *     summary: Get status of a training job
+ *     description: Returns current status, progress, and results (if completed) for a training job
+ *     tags: [LoRA Training]
+ *     parameters:
+ *       - in: path
+ *         name: jobId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Job ID
+ *     responses:
+ *       200:
+ *         description: Job status retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 jobId:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *                 progress:
+ *                   type: integer
+ *                 modelUrl:
+ *                   type: string
+ *                   description: Available when status is completed
+ *       404:
+ *         description: Job not found
+ *       500:
+ *         description: Server error
  */
 router.get('/status/:jobId', async (req, res) => {
   try {
@@ -123,8 +209,44 @@ router.get('/status/:jobId', async (req, res) => {
 });
 
 /**
- * GET /api/lora/list
- * List all LORAs for a user
+ * @swagger
+ * /api/lora/list:
+ *   get:
+ *     summary: List all LORAs for a user
+ *     description: Returns all LoRA training jobs for a specific user, optionally filtered by status
+ *     tags: [LoRA Training]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [queued, processing, completed, failed]
+ *         description: Filter by status
+ *     responses:
+ *       200:
+ *         description: List of LORAs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total:
+ *                   type: integer
+ *                 loras:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Job'
+ *       400:
+ *         description: Missing userId parameter
+ *       500:
+ *         description: Server error
  */
 router.get('/list', async (req, res) => {
   try {

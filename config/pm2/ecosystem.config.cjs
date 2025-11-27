@@ -17,18 +17,24 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M'
+    },
+    {
+      name: 'lora-training-worker',
+      script: './services/lora-training/start.sh',
+      cwd: '/var/www/content-generation-service',
+      instances: 1,
+      exec_mode: 'fork',
+      interpreter: 'bash',
+      env: {
+        LORA_TRAINING_PORT: 5001
+      },
+      error_file: './logs/lora-worker-error.log',
+      out_file: './logs/lora-worker-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G'
     }
-    // LoRA training service will be added later
-    // {
-    //   name: 'lora-training-worker',
-    //   script: 'services/lora-training/app.py',
-    //   cwd: '/var/www/content-generation-service',
-    //   interpreter: 'python3',
-    //   instances: 1,
-    //   exec_mode: 'fork',
-    //   env: {
-    //     LORA_TRAINING_PORT: 5001
-    //   }
-    // }
   ]
 };

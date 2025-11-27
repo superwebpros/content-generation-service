@@ -1,0 +1,33 @@
+# Web framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# MongoDB
+motor>=3.3.0  # Async MongoDB driver
+pymongo>=4.6.0
+
+# AWS S3
+boto3>=1.28.0
+
+# Core dependencies
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Video processing
+opencv-python>=4.8.0
+
+# fal.ai integration
+fal-client>=0.4.0
+
+# Optional: Auto-captioning (if using Replicate)
+replicate>=0.25.0
+
+# Optional: Advanced image processing
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0  # For testing FastAPI

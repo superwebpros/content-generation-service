@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import loraRoutes from './routes/lora.js';
+import { specs, swaggerUi } from './config/swagger.js';
 
 // ES modules workaround for __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -27,6 +28,12 @@ app.use(cors()); // Enable CORS
 app.use(morgan('combined')); // Logging
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  customSiteTitle: 'Content Generation API Docs',
+  customCss: '.swagger-ui .topbar { display: none }'
+}));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
