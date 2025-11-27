@@ -1,0 +1,92 @@
+# Content Generation Service
+
+> Multi-language microservices platform for AI-powered content generation, including LoRA training, image generation, and video processing. Built with Node.js (API Gateway) and Python (AI workers), using MongoDB for metadata and S3 for asset storage.
+
+This service provides REST APIs for training custom LoRA models from video, generating images with AI, and processing multimedia content. Designed for scalability with independent service deployment and TDD workflow.
+
+## Core Documentation
+
+- [README](README.md): Complete service documentation, architecture overview, and usage guide
+- [Getting Started Guide](GETTING_STARTED.md): Quick start for developers, testing workflow, and common commands
+- [Setup Summary](SETUP_COMPLETE.md): What's built, current status, and next steps
+
+## API Documentation
+
+- [Swagger API Docs](http://localhost:5000/api-docs): Interactive API documentation for API Gateway (Node.js)
+- [FastAPI Docs](http://localhost:5001/docs): Auto-generated docs for LoRA Training Worker (Python)
+
+## Service Architecture
+
+- [API Gateway Source](services/api-gateway/src/index.js): Main Express server entry point
+- [LoRA Routes](services/api-gateway/src/routes/lora.js): LoRA training endpoints with Swagger annotations
+- [MongoDB Schema](shared/schemas/Job.js): Job model with versioning support
+- [S3 Client](shared/storage/s3-client.js): S3 utilities for file upload/download
+
+## Python Worker
+
+- [FastAPI App](services/lora-training/app.py): LoRA training worker service
+- [Training Orchestrator](services/lora-training/core/trainer.py): Main training pipeline logic
+- [Video Processor](services/lora-training/core/video_processor.py): Frame extraction from video
+- [Dataset Builder](services/lora-training/core/dataset_builder.py): Dataset preparation with quality filtering
+- [fal.ai Provider](services/lora-training/providers/fal_ai.py): fal.ai API integration for training
+
+## Testing
+
+- [Python Tests](services/lora-training/test_app.py): pytest test suite for FastAPI worker (5 tests passing)
+- [Node Integration Tests](services/api-gateway/tests/integration/lora.test.js): Jest integration test templates
+- [Jest Config](services/api-gateway/jest.config.js): Test configuration for Node.js
+- [pytest Config](services/lora-training/pytest.ini): Test configuration for Python
+
+## Deployment
+
+- [PM2 Ecosystem](config/pm2/ecosystem.config.cjs): Process management for both Node and Python services
+- [Nginx Config](config/nginx/content.superwebpros.com.conf): Reverse proxy configuration for production
+- [Python Startup Script](services/lora-training/start.sh): Bash wrapper for uvicorn with venv activation
+
+## Configuration
+
+- [Environment Template](/.env.example): Template for required environment variables
+- [Package Configuration](package.json): Root workspace configuration
+- [API Gateway Package](services/api-gateway/package.json): Node.js dependencies
+- [Python Requirements](services/lora-training/requirements.txt): Python dependencies
+
+## Storage Structure
+
+S3 bucket `content-generation-assets` organized as:
+- `loras/{userId}/{jobId}/v{version}/model.safetensors` - Trained LoRA models
+- `datasets/{userId}/{jobId}/images/` - Training datasets
+- `generated-images/{userId}/{jobId}/` - Generated content
+- `temp/{jobId}/` - Temporary files (auto-deleted after 24hrs)
+
+MongoDB `content-generation` database:
+- Collection `jobs`: Job metadata, status, progress, and versioning
+
+## Key Design Decisions
+
+**Microservices Architecture**: Separate services for API Gateway (Node) and AI Workers (Python) to leverage language-specific strengths and enable independent scaling.
+
+**Storage Strategy**: MongoDB for flexible job metadata and relationships, S3 for large binary assets (models, videos, images).
+
+**Service Communication**: HTTP REST between services with explicit port assignments (API Gateway :5000, LoRA Worker :5001).
+
+**Testing Philosophy**: TDD with tests written first, comprehensive Swagger/OpenAPI documentation auto-generated from code.
+
+**Deployment**: PM2 for process management with bash wrapper for Python services, nginx for reverse proxy and SSL termination.
+
+## API Endpoints
+
+Current endpoints:
+- `POST /api/lora/train` - Create new LoRA training job
+- `GET /api/lora/status/:jobId` - Get job status and progress
+- `GET /api/lora/list?userId=X` - List all jobs for a user
+- `GET /api/lora/:jobId` - Get detailed job information
+- `GET /health` - Service health check
+
+## Optional
+
+- [Service Integration](services/api-gateway/src/config/services.js): Internal service communication utilities
+- [Database Config](services/api-gateway/src/config/db.js): MongoDB connection setup
+- [Swagger Config](services/api-gateway/src/config/swagger.js): OpenAPI specification configuration
+- [Face Detection](services/lora-training/utils/face_detection.py): Quality filtering for training frames
+- [Captioning Utils](services/lora-training/utils/captioning.py): Auto-caption generation for datasets
+- [Storage Manager](services/lora-training/core/storage.py): LoRA versioning and metadata management
