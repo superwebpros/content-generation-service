@@ -26,7 +26,7 @@ const jobSchema = new Schema({
   type: {
     type: String,
     required: true,
-    enum: ['lora-training', 'image-generation', 'video-generation'],
+    enum: ['lora-training', 'image-generation', 'video-generation', 'transcription'],
     index: true
   },
 
